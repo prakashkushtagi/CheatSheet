@@ -158,3 +158,287 @@ Data management commands:
 * Remove unused networks: [`docker network prune`](https://docs.docker.com/engine/reference/commandline/network_prune/)
 * Remove unused containers: [`docker container prune`](https://docs.docker.com/engine/reference/commandline/network_prune/)
 * Remove unused images: [`docker image prune`](https://docs.docker.com/engine/reference/commandline/network_prune/)
+
+====================================================================================================================================================================
+
+****  http://www.openkb.info/2018/10/docker-cheat-sheet.html  ****
+
+Docker Chet Sheet from OPENKB WebSite
+
+Docker cheat sheet
+This article records the command commands for Docker from https://docs.docker.com.
+
+Orientation
+1. List Docker CLI commands
+
+docker
+docker container --help
+
+2. Display Docker version and info
+
+docker --version
+docker version
+docker info
+
+3. Execute Docker image
+
+docker run hello-world
+
+4. List Docker images
+
+docker image ls
+
+5. List Docker containers (running, all, all in quiet mode)
+
+docker container ls
+docker container ls --all
+docker container ls -aq
+
+Containers
+
+1. Create image using this directory's Dockerfile
+
+docker build -t friendlyhello .
+
+2. Run "friendlyname" mapping port 4000 to 80
+
+docker run -p 4000:80 friendlyhello
+3. Run "friendlyname" mapping port 4000 to 80 in detach mode
+
+docker run -d -p 4000:80 friendlyhello
+
+4. Manage containers
+
+# List all running containers
+docker container ls
+# List all containers, even those not running                                
+docker container ls -a    
+# Gracefully stop the specified container         
+docker container stop <hash>  
+# Force shutdown of the specified container         
+docker container kill <hash>         
+# Remove specified container from this machine
+docker container rm <hash>        
+# Remove all containers
+docker container rm $(docker container ls -a -q)
+
+5. Manage images
+
+# List all images on this machine
+docker image ls -a        
+# Remove specified image from this machine                     
+docker image rm <image id>   
+# Remove all images from this machine         
+docker image rm $(docker image ls -a -q)
+
+6. Docker hub related
+
+# Log in this CLI session using your Docker credentials
+docker login          
+# Tag <image> for upload to registry   
+docker tag <image> username/repository:tag
+# Upload tagged image to registry  
+docker push username/repository:tag 
+# Run image from a registry           
+docker run username/repository:tag
+
+Services
+
+1. Sample docker-compose.yml that defines how Docker containers should behave in production.
+
+version: "3"
+services:
+  web:
+    # replace username/repo:tag with your name and image details
+    image: username/repo:tag
+    deploy:
+      replicas: 5
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 50M
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "4000:80"
+    networks:
+      - webnet
+networks:
+  webnet:
+
+2. Enable swarm mode and make your current machine a swarm manager
+
+docker swarm init
+
+3. Mange Stack
+
+# Run the specified Compose file                                        
+docker stack deploy -c <composefile> <appname>
+docker stack deploy -c docker-compose.yml getstartedlab
+
+# List stacks or apps
+docker stack ls
+
+4. Manage Service
+
+# List running services associated with an app
+docker service ls               
+# List tasks associated with an app 
+docker service ps <service>     
+docker service ps getstartedlab_web
+
+5. Inspect task or container
+
+docker inspect <task or container>
+
+6. Take down an application
+
+docker stack rm <appname>
+docker stack rm getstartedlab
+
+7. Take down a single node swarm from the manager
+
+docker swarm leave --force
+
+Swarms
+1. Create a VM
+
+docker-machine create --driver virtualbox myvm1
+docker-machine create --driver virtualbox myvm2
+
+2. List VMs
+
+docker-machine ls
+
+3. Instruct myvm1 to become swarm manager
+
+docker-machine ssh myvm1 "docker swarm init --advertise-addr <myvm1 ip>"
+docker-machine ssh myvm1 "docker swarm init --advertise-addr 192.168.99.100"
+
+4. Instruct myvm2 to become swarm worker
+
+docker-machine ssh myvm2 "docker swarm join --token <token> <ip>:2377"
+docker-machine ssh myvm2 "docker swarm join --token SWMTKN-1-437hle524hh1hulxorovrlbfgfx645plt3sba8af3tewsb5q8d-7ez64tn8ggv7twildcg19j30c 192.168.99.100:2377"
+
+5. List the nodes in the swarm
+
+docker-machine ssh myvm1 "docker node ls"
+
+6. Configure your shell to talk to myvm1
+
+# Show shell variable for myvm1
+
+docker-machine env myvm1 
+# Set docker-machine shell variable
+
+eval $(docker-machine env myvm1)
+# Unset docker-machine shell variable
+
+eval $(docker-machine env -u)
+# Verify which is the active machine,indicated by asterisk
+
+docker-machine ls
+
+7. View join token from swarm manager
+
+docker-machine ssh myvm1 "docker swarm join-token -q worker"
+
+8. Open ssh session with the VM; type "exit" to end
+docker-machine ssh myvm1
+
+9. View nodes in swarm (while logged on to manager)
+
+docker node ls
+
+10. Leave swarm
+
+# Make the worker leave the swarm
+
+docker-machine ssh myvm2 "docker swarm leave"
+# Make master leave, kill swarm
+
+docker-machine ssh myvm1 "docker swarm leave -f"
+
+11. Status/Stop/Start a VM
+
+docker-machine status myvm1
+docker-machine stop myvm1
+docker-machine start myvm1
+
+12. Stop/Start all running VMs
+
+docker-machine stop $(docker-machine ls -q)
+docker-machine start $(docker-machine ls -q)
+
+13. Delete all VMs and their disk images
+
+docker-machine rm $(docker-machine ls -q)
+
+14. Copy files to VM's home directory
+
+docker-machine scp docker-compose.yml myvm1:~
+
+Stacks
+1. Sample docker-compose-stack.yml which include "visualizer" and "redis" services
+
+version: "3"
+services:
+  web:
+    # replace username/repo:tag with your name and image details
+    image: username/repo:tag
+    deploy:
+      replicas: 5
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 50M
+    ports:
+      - "80:80"
+    networks:
+      - webnet
+  visualizer:
+    image: dockersamples/visualizer:stable
+    ports:
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+    networks:
+      - webnet
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - "/home/docker/data:/data"
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+    command: redis-server --appendonly yes
+    networks:
+      - webnet
+networks:
+  webnet:
+
+2. Create "./data" directory on myvm1 -- swarm manager
+
+docker-machine ssh myvm1 "mkdir ./data"
+
+3. Deploy the stack
+
+eval $(docker-machine env myvm1)
+docker stack deploy -c docker-compose-stack.yml getstartedlab
+
+4. Check visualizer on myvm1
+
+http://192.168.99.100:8080
+Or:
+docker stack ps getstartedlab
+
+5. List all services
+
+docker service ls
